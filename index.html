@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<style id="app-lock">html{-webkit-text-size-adjust:100%;text-size-adjust:100%}:where(html,body,*){touch-action:manipulation}</style>
+<script id="app-lock-js">(function(){var s={passive:false},p=function(e){e.preventDefault()};
+['gesturestart','gesturechange','gestureend'].forEach(function(t){document.addEventListener(t,p,s)});
+document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},s);
+document.addEventListener('dblclick',p,s);
+addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault()},s);
+addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&/^[=+\-0]$/.test(e.key))e.preventDefault()});})();</script>
+
+
+<title>國軍志願役待遇試算器App</title>
+<style>
+:root{
+  --bg:#0a0a0b; --panel:#131315; --panel2:#18181b; --line:#2a2a2e;
+  --ink:#f1efe8; --mute:#8e8b82; --gold:#d4af5a; --gold2:#f0d58c; --goldd:#8d7230;
+  --ivory:#ece6d6; --ivory-ink:#1b1a16; --ivory-line:#cfc6ad; --ivory-mute:#6f6a58;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+  line-height:1.5;font-size:15px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:22px 14px 56px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;
+  padding-bottom:12px;border-bottom:1px solid var(--line)}
+h1{font-size:1.2rem;margin:0;letter-spacing:.06em;font-weight:700}
+h1 span{color:var(--gold)}
+.tag{font-size:.72rem;color:var(--mute);letter-spacing:.08em}
+
+/* 輸入區：象牙白、緊湊，與下方黑金結果區做出區隔 */
+.input{background:var(--ivory);color:var(--ivory-ink);border-radius:10px;padding:12px 14px 14px;
+  border-top:3px solid var(--gold)}
+.input .ttl{font-size:.74rem;letter-spacing:.14em;color:var(--ivory-mute);margin-bottom:8px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px}
+@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}}
+label{display:block;font-size:.72rem;color:var(--ivory-mute);margin-bottom:2px;font-weight:700}
+select{width:100%;padding:6px 8px;font-size:.88rem;border:1px solid var(--ivory-line);border-radius:6px;
+  background:#fbf8ee;color:var(--ivory-ink);font-weight:700}
+select:disabled{opacity:.45}
+.hint{font-size:.66rem;color:var(--ivory-mute);margin-top:1px;min-height:1em;font-weight:700}
+.input .ttl{font-weight:700}
+button.go{margin-top:10px;width:100%;padding:10px;font-size:.98rem;font-weight:700;letter-spacing:.2em;border:0;border-radius:7px;
+  background:linear-gradient(180deg,var(--gold2),var(--gold) 60%,var(--goldd));color:#1a1405;cursor:pointer}
+button.go:hover{filter:brightness(1.07)}
+
+/* 結果區 */
+#results{display:none;margin-top:16px}
+#results.stale{opacity:.4}
+.stalemsg{display:none;border:1px solid var(--goldd);color:var(--gold2);padding:7px 12px;border-radius:6px;font-size:.82rem;margin-bottom:12px}
+#results.stale .stalemsg{display:block}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:560px){.hero{grid-template-columns:1fr}}
+.tile{background:linear-gradient(160deg,#1b1a15,#101011);border:1px solid var(--goldd);border-radius:10px;padding:14px 16px}
+.tile .lab{font-size:.75rem;color:var(--mute);letter-spacing:.1em}
+.tile .num{font-size:1.9rem;font-weight:700;color:var(--gold2);font-variant-numeric:tabular-nums;line-height:1.2}
+.tile .sm{font-size:.8rem;color:var(--mute);margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .sm b{color:var(--ink);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px 16px 8px;margin-bottom:12px}
+.card h2{font-size:.78rem;letter-spacing:.14em;color:var(--gold);margin:12px 0 4px;font-weight:600;
+  display:flex;align-items:center;gap:8px}
+.card h2::after{content:"";flex:1;height:1px;background:var(--line)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:7px 0;border-bottom:1px solid #1f1f23;text-align:left;font-size:.9rem}
+tr:last-child td{border-bottom:0}
+th{font-size:.72rem;color:var(--mute);font-weight:500}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+td.m{color:var(--mute);font-size:.8rem}
+tr.sum td{border-top:1px solid var(--goldd);color:var(--gold2);font-weight:700}
+tr.grp td{color:var(--gold);font-size:.72rem;letter-spacing:.12em;padding-top:12px;border-bottom:1px solid var(--line)}
+.note{font-size:.74rem;color:var(--mute);margin:6px 0 4px}
+footer{margin-top:18px;font-size:.72rem;color:var(--mute);border-top:1px solid var(--line);padding-top:12px}
+footer ul{padding-left:16px;margin:0}
+footer li{margin-bottom:3px}
+</style>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="國軍志願役待遇試算器App">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>國軍志願役<span>待遇試算</span></h1>
+    <div class="tag">114/1/1 俸額表・專業加給表</div>
+  </header>
+
+  <section class="input">
+    <div class="ttl">輸入條件</div>
+    <div class="grid">
+      <div><label for="rank">階級</label><select id="rank"></select></div>
+      <div><label for="level">級數</label><select id="level"></select><div class="hint" id="levelHint"></div></div>
+      <div><label for="years">目前年資</label><select id="years"></select><div class="hint">計算慰勞假</div></div>
+      <div><label for="combat">戰鬥部隊加給</label>
+        <select id="combat">
+          <option value="0">無</option>
+          <option value="12000">第一類 +12,000</option>
+          <option value="7000">第二類 +7,000</option>
+        </select><div class="hint">&nbsp;</div></div>
+      <div><label for="lead">領導加給（主管職務）</label>
+        <select id="lead"><option value="no">否</option><option value="yes">是</option></select>
+        <div class="hint" id="leadHint"></div></div>
+      <div id="leadTierBox" style="display:none"><label for="leadTier">主管等級（將官）</label><select id="leadTier"></select><div class="hint">&nbsp;</div></div>
+      <div><label for="island">外島服役</label>
+        <select id="island">
+          <option value="0">無</option>
+          <option value="9790">澎湖 +9,790</option>
+          <option value="9790|k">金門 +9,790</option>
+          <option value="9790|m">馬祖 +9,790</option>
+          <option value="12000">東引 +12,000</option>
+        </select><div class="hint">&nbsp;</div></div>
+    </div>
+    <button class="go" id="calc">開始計算</button>
+  </section>
+
+  <div id="results">
+    <div class="stalemsg">輸入已變更，請重新按「開始計算」。</div>
+
+    <div class="hero">
+      <div class="tile"><div class="lab">每月薪資</div><div class="num" id="heroMonthly"></div><div class="sm" id="heroMonthlySub"></div></div>
+      <div class="tile"><div class="lab">年總收入</div><div class="num" id="heroYearA"></div><div class="sm" id="heroYearSub"></div></div>
+    </div>
+
+    <div class="card">
+      <h2>每月薪資明細</h2>
+      <table id="monthly"></table>
+    </div>
+
+    <div class="card">
+      <h2>年度獎金</h2>
+      <table id="bonus"></table>
+      <div class="note" id="bonusNote"></div>
+    </div>
+
+    <div class="card">
+      <h2>慰假獎金（休假補助費）</h2>
+      <table id="leave"></table>
+    </div>
+
+    <div class="card">
+      <h2>各項補助</h2>
+      <table id="aids"></table>
+      <div class="note">祖父母（含外祖父母）限無子女、子女未滿 20 歲，或子女無力謀生且仰賴您扶養者；子女限未滿 20 歲、未婚且無職業者（另有無力謀生例外）。</div>
+    </div>
+
+    <div class="card">
+      <h2>子女教育補助（每學期・每名子女）</h2>
+      <table id="edu"></table>
+      <div class="note">與階級無關。已享學費全免／減免者不得重複請領；實際繳納低於標準者，僅補實際數額。</div>
+    </div>
+  </div>
+
+  <footer>
+    <ul>
+      <li>本俸、專業加給：使用者提供之 114/1/1 俸額表與專業加給表。主管職務加給為同日生效之主管加給表（第三方轉載）；士官長一律 4,310，督導長另有規定；上將無專業／主管加給資料，以 0 計。</li>
+      <li>志願役加給取目前實發：將官 13,000、上中校 14,000、少校以下 15,000（調升至 3 萬尚未編列預算，待釋憲）。</li>
+      <li>地域加給（新聞報導）：澎湖、金門、馬祖 9,790，東引 12,000；各駐地等級不同者金額可能較高，以最新公告為準。</li>
+      <li>年終工作獎金以 1.5 個月計，實際依行政院當年度公告。考績：甲以上 1 個月、乙上 0.5 個月；本階最高俸級（含志願役士兵）加倍為 2、1.5 個月；乙等以下不發。</li>
+      <li>年終、考績、婚喪補助之基數僅含本俸、專業加給、主管加給，不含志願役、戰鬥、地域加給。</li>
+      <li>本工具為估算，實際發放以國防部及所屬單位核定為準。</li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+/* ===== CORE-START ===== */
+const L=(a)=>a; // 俸額表資料（114/1/1）
+const RANKS=[
+ {n:'二等兵',lv:[10870],pro:16280,vol:15000,soldier:true,lead:null},
+ {n:'一等兵',lv:[11710],pro:17290,vol:15000,soldier:true,lead:null},
+ {n:'上等兵',lv:[12540,13380,13920,14460,15000,15540],pro:18310,vol:15000,soldier:true,lead:null},
+ {n:'下士',lv:[13380,13920,14460,15000,15540,16090,16630,17390,18160,18920,19690,20460],pro:20340,vol:15000,lead:[{l:'',v:2490}]},
+ {n:'中士',lv:[17390,18160,18920,19690,20460,21220,21990,22750,23520,24290,25050,25820],pro:20420,vol:15000,lead:[{l:'',v:2910}]},
+ {n:'上士',lv:[21220,21990,22750,23520,24290,25050,25820,26580,27350,28120,28880,29650],pro:20480,vol:15000,lead:[{l:'',v:3430}]},
+ {n:'三等士官長',lv:[22750,23520,24290,25050,25820,26580,27350,28120,28880,29650,30410,31180,31950,32710,33480,34240,35010,35780,36540,37310],pro:21720,vol:15000,lead:[{l:'',v:4310}]},
+ {n:'二等士官長',lv:[25050,25820,26580,27350,28120,28880,29650,30410,31180,31950,32710,33480,34240,35010,35780,36540,37310,38070,38840,39610],pro:23880,vol:15000,lead:[{l:'',v:4310}]},
+ {n:'一等士官長',lv:[28880,29650,30410,31180,31950,32710,33480,34240,35010,35780,36540,37310,38070,38840,39610,40370,41140,41900,42670,43440],pro:24940,vol:15000,lead:[{l:'',v:4310}]},
+ {n:'少尉',lv:[22750,23520,24290,25050,25820,26580,27350,28120,28880,29650],pro:20750,vol:15000,lead:[{l:'',v:4120}]},
+ {n:'中尉',lv:[25050,25820,26580,27350,28120,28880,29650,30410,31180,31950],pro:21720,vol:15000,lead:[{l:'',v:4320}]},
+ {n:'上尉',lv:[28880,30030,31180,32330,33480,34630,35780,36930,38070,39220,40370,41520],pro:23880,vol:15000,lead:[{l:'',v:4870}]},
+ {n:'少校',lv:[32710,33860,35010,36160,37310,38460,39610,40760,41900,43050,44200,45350],pro:24940,vol:15000,lead:[{l:'',v:5930}]},
+ {n:'中校',lv:[37310,38460,39610,40760,41900,43050,44200,45350,46500,47650,48800,49950],pro:28980,vol:14000,lead:[{l:'',v:8880}]},
+ {n:'上校',lv:[41900,43440,44970,46500,48030,49560,51100,52630,54160,55690,57220,58760],pro:34400,vol:14000,lead:[{l:'',v:13510}]},
+ {n:'少將',lv:[46500,48030,49560,51100,52630,54160,55690,57220,58760,60290],pro:39800,vol:13000,lead:[{l:'一級',v:30410},{l:'二級',v:25050},{l:'三級',v:19710}]},
+ {n:'中將',lv:[53390,54930,56460,57990,59520,63570],pro:46640,vol:13000,lead:[{l:'一級',v:59040},{l:'二級',v:46420},{l:'三級',v:33730}]},
+ {n:'二級上將',lv:[109520],pro:0,vol:13000,lead:null},
+ {n:'一級上將',lv:[109520],pro:0,vol:13000,lead:null}
+];
+const EDU=[
+ ['國小（公私立）',500],['國中（公私立）',500],
+ ['高中（職）公立',3800],['高中（職）私立',13500],
+ ['五專4、5年級及二專 公立',10000],['五專4、5年級及二專 私立',28000],
+ ['大學（專）公立',13600],['大學（專）私立',35800]
+];
+function leaveDays(y){ // 年終服役滿 y 年者，次年起之慰勞假日數
+  if(y>=14) return 30; if(y>=9) return 28; if(y>=6) return 21; if(y>=3) return 14; if(y>=1) return 7; return 0;
+}
+function compute(inp){
+  const r=RANKS[inp.rankIdx];
+  const base=r.lv[inp.level-1];
+  const pro=r.pro;
+  const vol=r.vol;
+  const lead=(inp.lead && r.lead)?r.lead[Math.min(inp.leadTier,r.lead.length-1)].v:0;
+  const combat=inp.combat, area=inp.island;
+  const monthly=base+pro+vol+lead+combat+area;
+  const basis=base+pro+lead;
+  const yearEnd=Math.round(basis*1.5);
+  const top=!!r.soldier||inp.level===r.lv.length;
+  const mA=top?2:1, mB=top?1.5:0.5;
+  const perfA=Math.round(basis*mA), perfB=Math.round(basis*mB);
+  const days=leaveDays(inp.years);
+  const leave=days>=10?16000:days*1600;
+  const yearA=monthly*12+yearEnd+perfA+leave;
+  const yearB=monthly*12+yearEnd+perfB+leave;
+  return {r,base,pro,vol,lead,combat,area,monthly,basis,yearEnd,top,mA,mB,perfA,perfB,days,leave,yearA,yearB,
+    marry:base*2, birth:base*2, spouse:base*5, parent:base*5, grand:base*5, child:base*3, earth:base*5, fire:base*7};
+}
+/* ===== CORE-END ===== */
+
+const $=id=>document.getElementById(id);
+const n0=n=>Math.round(n).toLocaleString('en-US');
+const fmt=n=>'NT$ '+n0(n);
+const rankSel=$('rank'), levelSel=$('level'), yearsSel=$('years'), leadSel=$('lead'), tierSel=$('leadTier');
+
+RANKS.forEach((r,i)=>rankSel.add(new Option(r.n,i)));
+rankSel.value=4;
+for(let y=1;y<=40;y++) yearsSel.add(new Option(y+' 年',y));
+
+function refreshLevels(){
+  const r=RANKS[+rankSel.value];
+  const keep=+levelSel.value||1;
+  levelSel.innerHTML='';
+  r.lv.forEach((v,i)=>levelSel.add(new Option((i+1)+' 級（'+n0(v)+'）',i+1)));
+  levelSel.value=Math.min(keep,r.lv.length);
+  $('levelHint').textContent=r.lv.length===1?'僅一級':'共 '+r.lv.length+' 級';
+  if(r.lead){ leadSel.disabled=false; $('leadHint').textContent=r.lead.length>1?'依等級':n0(r.lead[0].v)+' 元'; }
+  else{ leadSel.value='no'; leadSel.disabled=true; $('leadHint').textContent='此階級無資料'; }
+  tierSel.innerHTML='';
+  if(r.lead&&r.lead.length>1) r.lead.forEach((t,i)=>tierSel.add(new Option(t.l+' '+n0(t.v),i)));
+  refreshTier();
+}
+function refreshTier(){
+  const r=RANKS[+rankSel.value];
+  $('leadTierBox').style.display=(r.lead&&r.lead.length>1&&leadSel.value==='yes')?'block':'none';
+}
+function markStale(){ $('results').classList.add('stale'); }
+rankSel.addEventListener('change',()=>{refreshLevels();markStale();});
+[levelSel,yearsSel,$('combat'),$('island'),tierSel].forEach(e=>e.addEventListener('change',markStale));
+leadSel.addEventListener('change',()=>{refreshTier();markStale();});
+refreshLevels();
+
+const tr=(a,b,c,cls='')=>`<tr class="${cls}"><td>${a}</td>${c===undefined?'':`<td class="m">${b}</td>`}<td class="r">${c===undefined?b:c}</td></tr>`;
+
+$('calc').addEventListener('click',()=>{
+  const c=compute({
+    rankIdx:+rankSel.value, level:+levelSel.value, years:+yearsSel.value,
+    combat:+$('combat').value, lead:leadSel.value==='yes', leadTier:+tierSel.value||0,
+    island:parseInt($('island').value,10)||0
+  });
+  $('heroMonthly').textContent=fmt(c.monthly);
+  $('heroMonthlySub').innerHTML='本俸＋專業加給 <b>'+n0(c.base+c.pro)+'</b>';
+  $('heroYearA').textContent=fmt(c.yearA);
+  $('heroYearSub').innerHTML='考績甲以上　乙上則為 <b>'+fmt(c.yearB)+'</b>';
+
+  $('monthly').innerHTML=
+    tr('本俸（含副食費 450）',n0(c.base))+tr('專業加給',n0(c.pro))+
+    tr('志願役加給',n0(c.vol))+tr('主管職務加給',n0(c.lead))+
+    tr('戰鬥部隊加給',n0(c.combat))+tr('地域加給',n0(c.area))+
+    tr('合計',n0(c.monthly),undefined,'sum');
+
+  $('bonus').innerHTML=
+    `<tr><th>項目</th><th class="r">考績甲以上</th><th class="r">考績乙上</th></tr>`+
+    `<tr><td>計算基數 <span class="m" style="color:var(--mute);font-size:.78rem">本俸＋專業＋主管</span></td><td class="r">${n0(c.basis)}</td><td class="r">${n0(c.basis)}</td></tr>`+
+    `<tr><td>年終工作獎金 <span style="color:var(--mute);font-size:.78rem">1.5 個月</span></td><td class="r">${n0(c.yearEnd)}</td><td class="r">${n0(c.yearEnd)}</td></tr>`+
+    `<tr><td>考績獎金 <span style="color:var(--mute);font-size:.78rem">${c.mA} / ${c.mB} 個月</span></td><td class="r">${n0(c.perfA)}</td><td class="r">${n0(c.perfB)}</td></tr>`+
+    `<tr class="sum"><td>年度獎金合計</td><td class="r">${n0(c.yearEnd+c.perfA)}</td><td class="r">${n0(c.yearEnd+c.perfB)}</td></tr>`;
+  $('bonusNote').textContent=(c.top?'已為本階最高俸級（或志願役士兵），考績獎金加倍。':'未達本階最高俸級。')+' 考績乙等以下不發考績獎金。';
+
+  $('leave').innerHTML=
+    tr('目前年資',$('years').value+' 年')+tr('慰勞假天數',c.days+' 日')+
+    tr(c.days>=10?'休達 10 日以上，定額核發':'未達 10 日，每日 1,600 元',n0(c.leave),undefined,'sum');
+
+  $('aids').innerHTML=
+    `<tr class="grp"><td colspan="3">婚・育</td></tr>`+
+    tr('結婚補助','2 個月本俸',n0(c.marry))+
+    tr('生育補助','2 個月本俸（近 6 個月平均）',n0(c.birth))+
+    `<tr class="grp"><td colspan="3">喪葬</td></tr>`+
+    tr('配偶死亡','5 個月本俸',n0(c.spouse))+
+    tr('父母死亡','5 個月本俸',n0(c.parent))+
+    tr('祖父母死亡','5 個月本俸',n0(c.grand))+
+    tr('子女死亡','3 個月本俸',n0(c.child))+
+    `<tr class="grp"><td colspan="3">殮葬</td></tr>`+
+    tr('土葬','5 個月本俸',n0(c.earth))+
+    tr('火化','7 個月本俸',n0(c.fire));
+
+  $('edu').innerHTML=EDU.map(e=>tr(e[0],n0(e[1]))).join('');
+  const res=$('results'); res.style.display='block'; res.classList.remove('stale');
+  res.scrollIntoView({behavior:'smooth',block:'start'});
+});
+</script>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+</body>
+</html>
